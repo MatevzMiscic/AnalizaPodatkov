@@ -1,4 +1,4 @@
-# AnalizaPodatkov
+# Analiza takmovanj na Codeforces
 
 Analiziral bom zadnjih 1000 tekmovanj na [Codeforces](https://codeforces.com).
 
