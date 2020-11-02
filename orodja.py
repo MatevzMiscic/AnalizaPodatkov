@@ -32,6 +32,13 @@ def shrani_spletno_stran(url, ime_datoteke, vsili_prenos=False):
             print('shranjeno!')
 
 
+def zapisi_v_datoteko(niz, ime_datoteke):
+    '''Zapise niz v datoteko.'''
+    with open(ime_datoteke, 'w', encoding='utf-8') as datoteka:
+        datoteka.write(niz)
+        print('shranjeno!')
+
+
 def vsebina_datoteke(ime_datoteke):
     '''Vrne niz z vsebino datoteke z danim imenom.'''
     with open(ime_datoteke, encoding='utf-8') as datoteka:
