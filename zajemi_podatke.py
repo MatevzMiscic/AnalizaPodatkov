@@ -4,7 +4,8 @@ import orodja
 
 LAST_CONTEST = 1437
 NUMBER = 200
-DIR = "podatki"
+DATA_DIR = "podatki"
+PROCESSED_DIR = "obdelani_podatki"
 
 block_pat = re.compile(
     r'<tr participantId="\d+">'
@@ -31,8 +32,9 @@ task_pat = re.compile(
     r'<td.*?'
     r'(?:contestId=".*?".*?)?'
     r'(?:problemId=".*?".*?)?'
-    r'(?:title="(?P<programski_jezik>.*?)".*?>.*?)?'
-    r'<span class=".*?">(?P<submissions>.*?)</span>.*?'
+    r'(?:title="(?P<proglang>.*?)".*?>.*?)?'
+    #r'<span class="(?P<type>.*?)">(?P<submissions>.*?)</span>.*?'
+    r'<span class=".*?">.*?</span>.*?'
     r'(?:<span class=".*?">(?P<time>.*?)</span>.*?)?'
     r'</td>',
     flags=re.DOTALL
@@ -49,7 +51,7 @@ def load():
     for i in range(NUMBER):
         orodja.shrani_spletno_stran(
             f"https://codeforces.com/contest/{prvi + i}/standings", 
-            os.path.join(DIR, f"contest-{i + 1}.html"), 
+            os.path.join(DATA_DIR, f"contest-{i + 1}.html"), 
             False
         )
 
@@ -58,7 +60,7 @@ def valid_contests():
     Ta funkcija shrani števila vseh tekmovanj, ki imajo vsaj 200 udeležencev in so individualna.'''
     valid = []
     for i in range(NUMBER):
-        string = orodja.vsebina_datoteke(os.path.join(DIR, f"contest-{i + 1}.html"))
+        string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{i + 1}.html"))
         participants = 0
         found = 0
         tmin = 100
@@ -85,43 +87,50 @@ def valid_contests():
                 print(f"missing tasks: {tmin} / {tmax}")
     orodja.zapisi_v_datoteko(
         " ".join(valid), 
-        os.path.join(DIR, "valid_contests.txt"), 
+        os.path.join(DATA_DIR, "valid_contests.txt"), 
     )
     print(len(valid))
 
 def extract_tasks(string):
     tasks = []
-    for match in re.finditer(task_pat, string):
+    for i, match in enumerate(re.finditer(task_pat, string), 1):
         task = match.groupdict()
         # poiščemo pragramski jezik
-        if "programski_jezik" not in task:
-            task["programski_jezik"] = None
-        elif task["programski_jezik"] is not None:
-            low = task["programski_jezik"].lower()
+        if "proglang" not in task:
+            task["proglang"] = None
+        elif task["proglang"] is not None:
+            low = task["proglang"].lower()
             table = ["++", "java ", "py"]
             langs = ["c++", "java", "python"]
             for root, lang in zip(table, langs):
                 if root in low:
-                    task["programski_jezik"] = lang
+                    task["proglang"] = lang
                     break
-        # kolikokrat je tekmovalec oddal domnevno rešitev
+        # kolikokrat je tekmovalec oddal domnevno rešitev (tega podatka ne potrebujemo)
+        """
         if "submissions" not in task or task["submissions"] is None:
             task["submissions"] = 0
         else:
             if task["submissions"] == "+":
                 task["submissions"] = 1
-            elif task["submissions"] == "&nbsp;":
+            elif "&nbsp;" in task["submissions"]:
                 task["submissions"] = 0
             else:
-                task["submissions"] = int(task["submissions"])
-                if task["submissions"] > 0:
-                    task["submissions"] += 1
+                try:
+                    task["submissions"] = int(task["submissions"])
+                    if task["submissions"] > 0:
+                        task["submissions"] += 1
+                except ValueError:
+                    task["submissions"] = None
+        """
         # čas reševanja
         if "time" not in task:
             task["time"] = None
         elif task["time"] is not None:
             hour_min = task["time"].split(":")
             task["time"] = 60 * int(hour_min[0]) + int(hour_min[1])
+        # zaporedna šetvilka naloge na tekmovanju
+        task["number"] = i
         tasks.append(task)
     return tasks
 
@@ -140,26 +149,53 @@ def extract_contestant(string):
     contestant["tasks"] = extract_tasks(contestant["tasks"])
     return contestant
 
-def real():
-    nums = orodja.vsebina_datoteke(os.path.join(DIR, "valid_contests.txt")).split(" ")
+def get_userdict():
+    print("in")
+    nums = orodja.vsebina_datoteke(os.path.join(DATA_DIR, "valid_contests.txt")).split(" ")
     valid = [int(num) for num in nums]
-    # debug
-    valid = [200]
     users = {}
     for i in valid:
-        string = orodja.vsebina_datoteke(os.path.join(DIR, f"contest-{i}.html"))
+        print(i)
+        string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{i}.html"))
         for block in re.finditer(block_pat, string):
             contestant = extract_contestant(block.group(0))
+            contestant["contest"] = i
             name = contestant["name"]
             if name not in users:
                 users[name] = []
             users[name].append(contestant)
+    print("out")
     return users
-    
+
+def process_data():
+    userdict = get_userdict()
+    taskid, userid, subid = 1, 1, 1
+    seentasks = {}
+    users, tasks, submissions = [], [], []
+    for name, user in userdict.items():
+        newuser = {"id": userid, "name": name, "country": user[0]["country"]}
+        users.append(newuser)
+        for contestant in user:
+            for sub in contestant["tasks"]:
+                if (contestant["contest"], sub["number"]) not in seentasks:
+                    seentasks[(contestant["contest"], sub["number"])] = taskid
+                    tasks.append({"id": taskid, "contest": contestant["contest"], "number": sub["number"]})
+                    taskid += 1
+                sub["id"] = subid
+                subid += 1
+                sub["user"] = userid
+                sub["task"] = seentasks[(contestant["contest"], sub["number"])]
+                del sub["number"]
+                submissions.append(sub)
+        userid += 1
+    orodja.zapisi_csv(users, ["id", "name", "country"], os.path.join(PROCESSED_DIR, "users.csv"))
+    orodja.zapisi_csv(tasks, ["id", "contest", "number"], os.path.join(PROCESSED_DIR, "tasks.csv"))
+    orodja.zapisi_csv(submissions, ["id", "user", "task", "proglang", "time"], os.path.join(PROCESSED_DIR, "submissions.csv"))
+    print("done")
 
 def analyse():
     for i in range(NUMBER):
-        string = orodja.vsebina_datoteke(os.path.join(DIR, f"contest-{i + 1}.html"))
+        string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{i + 1}.html"))
         n = 0
         m = 0
         tmin = 100
@@ -179,7 +215,7 @@ def analyse():
         print(f"contest {i + 1}: contestants = {m} / {n}, tasks = [{tmin}, {tmax}]", warn[int(tmin < tmax or m < 200)])
 
 def analyselast(num=NUMBER):
-    string = orodja.vsebina_datoteke(os.path.join(DIR, f"contest-{num}.html"))
+    string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{num}.html"))
     n = 0
     m = 0
     tmin = 100
@@ -207,4 +243,5 @@ def analyselast(num=NUMBER):
 
 #analyse()
 #analyselast()
-print(real())
+#print(real())
+process_data()
