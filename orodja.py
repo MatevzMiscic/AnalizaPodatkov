@@ -1,4 +1,5 @@
 # datoteka orodja.py je vzeta od profesorja Pretnarja
+# dodal sem funkcijo zapisi_v_datoteko
 
 import csv
 import json

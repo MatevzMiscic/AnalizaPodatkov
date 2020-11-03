@@ -1,10 +1,10 @@
 # Analiza takmovanj na Codeforces
 
-Analiziral bom zadnjih 1000 tekmovanj na [Codeforces](https://codeforces.com).
+Analiziral bom zadnjih 200 tekmovanj na [Codeforces](https://codeforces.com).
 
 Za vsako tekmovanje bom zajel:
-* naloge in njihove težavnosi
-* udeležence tekmovanja
+* naloge na tekmovanju
+* najboljših 200 udeležencev tekmovanja
 
 Za vsakega udeleženca vsakega tekmovanja bom zajel še:
 * rezultate pri posameznih nalogah
