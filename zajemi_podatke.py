@@ -173,9 +173,11 @@ def process_data():
     seentasks = {}
     users, tasks, submissions = [], [], []
     for name, user in userdict.items():
-        newuser = {"id": userid, "name": name, "country": user[0]["country"]}
-        users.append(newuser)
+        best_place = 10**9
+        rank = None
         for contestant in user:
+            best_place = min(best_place, contestant["place"])
+            rank = contestant["rank"]
             for sub in contestant["tasks"]:
                 if (contestant["contest"], sub["number"]) not in seentasks:
                     seentasks[(contestant["contest"], sub["number"])] = taskid
@@ -187,8 +189,10 @@ def process_data():
                 sub["task"] = seentasks[(contestant["contest"], sub["number"])]
                 del sub["number"]
                 submissions.append(sub)
+        newuser = {"id": userid, "name": name, "rank": rank, "best_place": best_place, "country": user[0]["country"]}
+        users.append(newuser)
         userid += 1
-    orodja.zapisi_csv(users, ["id", "name", "country"], os.path.join(PROCESSED_DIR, "users.csv"))
+    orodja.zapisi_csv(users, ["id", "name", "rank", "best_place", "country"], os.path.join(PROCESSED_DIR, "users.csv"))
     orodja.zapisi_csv(tasks, ["id", "contest", "number"], os.path.join(PROCESSED_DIR, "tasks.csv"))
     orodja.zapisi_csv(submissions, ["id", "user", "task", "proglang", "time"], os.path.join(PROCESSED_DIR, "submissions.csv"))
     print("done")
