@@ -58,6 +58,7 @@ def load():
 def valid_contests():
     '''Nekatera tekmovanja so ekipna in nekatera niso odprta za vse tekmovalce. Takih tekmovanj ne bomo analizirali. 
     Ta funkcija shrani števila vseh tekmovanj, ki imajo vsaj 200 udeležencev in so individualna.'''
+    ranks = ["Legendary Grandmaster", "Master", "International Master", "International Grandmaster", "Expert", "Candidate Master", "Newbie", "Grandmaster", "Unrated,", "Specialist", "Pupil", "Unrated"]
     valid = []
     for i in range(NUMBER):
         string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{i + 1}.html"))
@@ -65,6 +66,8 @@ def valid_contests():
         found = 0
         tmin = 100
         tmax = 0
+        example = None
+        ranks_correct = True
         for block in re.finditer(block_pat, string):
             participants += 1
             contestant = re.search(contestant_pat, block.group(0))
@@ -76,7 +79,13 @@ def valid_contests():
                     t += 1
                 tmin = min(tmin, t)
                 tmax = max(tmax, t)
-        OK = (found == 200) and (tmin == tmax)
+                # validate rank
+                rank_and_name = contestant["rank"].split(" ")
+                rank = " ".join(rank_and_name[:-1])
+                if rank not in ranks:
+                    ranks_correct = False
+                    example = contestant.groupdict()["rank"]
+        OK = (found == 200) and (tmin == tmax) and ranks_correct
         if OK:
             valid.append(str(i + 1))
         else:
@@ -85,6 +94,8 @@ def valid_contests():
                 print(f"not enough participants: {found} / {participants}")
             elif tmin < tmax:
                 print(f"missing tasks: {tmin} / {tmax}")
+            elif not ranks_correct:
+                print("invalid rank:", example)        
     orodja.zapisi_v_datoteko(
         " ".join(valid), 
         os.path.join(DATA_DIR, "valid_contests.txt"), 
@@ -146,6 +157,8 @@ def extract_contestant(string):
     contestant["rank"] = " ".join(rank_and_name[:-1])
     if "country" not in contestant:
         contestant["country"] = None
+    if contestant["country"] == "Япония":
+        contestant["country"] = "Japan"
     contestant["tasks"] = extract_tasks(contestant["tasks"])
     return contestant
 
@@ -169,14 +182,12 @@ def get_userdict():
 
 def process_data():
     userdict = get_userdict()
-    taskid, userid, subid = 1, 1, 1
+    taskid, userid, subid, contid = 1, 1, 1, 1
     seentasks = {}
-    users, tasks, submissions = [], [], []
+    users, tasks, submissions, contestants = [], [], [], []
     for name, user in userdict.items():
-        best_place = 10**9
         rank = None
         for contestant in user:
-            best_place = min(best_place, contestant["place"])
             rank = contestant["rank"]
             for sub in contestant["tasks"]:
                 if (contestant["contest"], sub["number"]) not in seentasks:
@@ -185,16 +196,20 @@ def process_data():
                     taskid += 1
                 sub["id"] = subid
                 subid += 1
-                sub["user"] = userid
+                sub["contestant"] = contid
                 sub["task"] = seentasks[(contestant["contest"], sub["number"])]
                 del sub["number"]
                 submissions.append(sub)
-        newuser = {"id": userid, "name": name, "rank": rank, "best_place": best_place, "country": user[0]["country"]}
+            newcontestant = {"id": contid, "user": userid, "contest": contestant["contest"], "place": contestant["place"]}
+            contestants.append(newcontestant)
+            contid += 1
+        newuser = {"id": userid, "name": name, "rank": rank, "country": user[0]["country"]}
         users.append(newuser)
         userid += 1
-    orodja.zapisi_csv(users, ["id", "name", "rank", "best_place", "country"], os.path.join(PROCESSED_DIR, "users.csv"))
+    orodja.zapisi_csv(users, ["id", "name", "rank", "country"], os.path.join(PROCESSED_DIR, "users.csv"))
     orodja.zapisi_csv(tasks, ["id", "contest", "number"], os.path.join(PROCESSED_DIR, "tasks.csv"))
-    orodja.zapisi_csv(submissions, ["id", "user", "task", "proglang", "time"], os.path.join(PROCESSED_DIR, "submissions.csv"))
+    orodja.zapisi_csv(submissions, ["id", "contestant", "task", "proglang", "time"], os.path.join(PROCESSED_DIR, "submissions.csv"))
+    orodja.zapisi_csv(contestants, ["id", "user", "contest", "place"], os.path.join(PROCESSED_DIR, "contestants.csv"))
     print("done")
 
 def analyse():
