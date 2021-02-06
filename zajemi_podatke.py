@@ -58,7 +58,8 @@ def load():
 def valid_contests():
     '''Nekatera tekmovanja so ekipna in nekatera niso odprta za vse tekmovalce. Takih tekmovanj ne bomo analizirali. 
     Ta funkcija shrani števila vseh tekmovanj, ki imajo vsaj 200 udeležencev in so individualna.'''
-    ranks = ["Legendary Grandmaster", "Master", "International Master", "International Grandmaster", "Expert", "Candidate Master", "Newbie", "Grandmaster", "Unrated,", "Specialist", "Pupil", "Unrated"]
+    ranks = {"Legendary Grandmaster": 11, "International Grandmaster": 10, "Grandmaster": 9, "International Master": 8, "Master": 7,
+     "Candidate Master": 6, "Expert": 5, "Specialist": 4, "Apprentice": 3, "Pupil": 2, "Newbie": 1, "Unrated,": 0, "Unrated": 0}
     valid = []
     for i in range(NUMBER):
         string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{i + 1}.html"))
@@ -155,6 +156,8 @@ def extract_contestant(string):
     rank_and_name = contestant["rank"].split(" ")
     contestant["name"] = rank_and_name[-1]
     contestant["rank"] = " ".join(rank_and_name[:-1])
+    if contestant["rank"] == "Unrated,":
+        contestant["rank"] = "Unrated"
     if "country" not in contestant:
         contestant["country"] = None
     if contestant["country"] == "Япония":
@@ -181,14 +184,17 @@ def get_userdict():
     return users
 
 def process_data():
+    ranks = {"Legendary Grandmaster": 11, "International Grandmaster": 10, "Grandmaster": 9, "International Master": 8, "Master": 7, 
+        "Candidate Master": 6, "Expert": 5, "Specialist": 4, "Apprentice": 3, "Pupil": 2, "Newbie": 1, "Unrated,": 0, "Unrated": 0}
     userdict = get_userdict()
     taskid, userid, subid, contid = 1, 1, 1, 1
     seentasks = {}
     users, tasks, submissions, contestants = [], [], [], []
     for name, user in userdict.items():
-        rank = None
+        rank = "Unrated"
         for contestant in user:
-            rank = contestant["rank"]
+            if ranks[rank] < ranks[contestant["rank"]]:
+                rank = contestant["rank"]
             for sub in contestant["tasks"]:
                 if (contestant["contest"], sub["number"]) not in seentasks:
                     seentasks[(contestant["contest"], sub["number"])] = taskid
@@ -212,55 +218,4 @@ def process_data():
     orodja.zapisi_csv(contestants, ["id", "user", "contest", "place"], os.path.join(PROCESSED_DIR, "contestants.csv"))
     print("done")
 
-def analyse():
-    for i in range(NUMBER):
-        string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{i + 1}.html"))
-        n = 0
-        m = 0
-        tmin = 100
-        tmax = 0
-        for block in re.finditer(block_pat, string):
-            n += 1
-            contestant = re.search(contestant_pat, block.group(0))
-            if contestant is not None:
-                m += 1
-                t = 0
-                iterator = re.finditer(task_pat, contestant.groupdict()["tasks"])
-                for task in iterator:
-                    t += 1
-                tmin = min(tmin, t)
-                tmax = max(tmax, t)
-        warn = ["", "           <---"]
-        print(f"contest {i + 1}: contestants = {m} / {n}, tasks = [{tmin}, {tmax}]", warn[int(tmin < tmax or m < 200)])
-
-def analyselast(num=NUMBER):
-    string = orodja.vsebina_datoteke(os.path.join(DATA_DIR, f"contest-{num}.html"))
-    n = 0
-    m = 0
-    tmin = 100
-    tmax = 0
-    for block in re.finditer(block_pat, string):
-        n += 1
-        
-        #print(block.group(0))
-        if n == 1: print(extract_contestant(block.group(0)))
-        #break
-
-        contestant = re.search(contestant_pat, block.group(0))
-        if contestant is not None:
-            #print("bruh")
-            m += 1
-            t = 0
-            iterator = re.finditer(task_pat, contestant.groupdict()["tasks"])
-            for task in iterator:
-                t += 1
-            tmin = min(tmin, t)
-            tmax = max(tmax, t)
-            #print(contestant.groupdict()["place"], ": ", t)
-        #break
-    print(f"contestants = {m} / {n}, tasks = [{tmin}, {tmax}]")
-
-#analyse()
-#analyselast()
-#print(real())
 process_data()
