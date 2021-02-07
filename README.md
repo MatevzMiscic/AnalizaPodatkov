@@ -1,13 +1,12 @@
 # Analiza takmovanj na Codeforces
 
-Analiziral sem zadnjih 200 tekmovanj na [Codeforces](https://codeforces.com).  
+Analiziral sem nekaj tekmovanj na [Codeforces](https://codeforces.com).  
 
 Na spletni trani codeforces so pogosto tekmovanja, na katerih tekmujejo programerji iz celega sveta. Na vsakem tekmovanju je nekaj nalog, ki jih morajo tekmovalci rešiti. To naredijo tako, da napišejo ustrezno kodo, ki jo zahteva naloga, in to kodo oddajo.
 
 ## Podatki
 
 Analiziral sem rezultate na nekaterih tekmovanjih na codeforces. Od zadnjih 200 tekmovanj sem vzel tiste, ki zadoščajo nekemu formatu (morajo biti individualna ipd.), zato da lahko rezultate primerjamo.
-V tej tabeli se nahajajo podatki tekmovalcev, ki so tekmovali na zadnjih 100 tekmovanjih. Ker je vsak od njih lahko sodeloval na več tekmovanjih, imamo za vsakega uporabnika in vsako tekmovanje, na katerem je bil, še zapis v tabeli *contestants*.    
 
 Za vsakega **uporabnika**, ki je bil na katerem od obravnavanih tekmovanj, sem zajel:
 * uporabniško ime
