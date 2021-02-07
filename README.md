@@ -10,19 +10,18 @@ Analiziral sem rezultate na nekaterih tekmovanjih na codeforces. Od zadnjih 200 
 
 Za vsakega **uporabnika**, ki je bil na katerem od obravnavanih tekmovanj, sem zajel:
 * uporabniško ime
-* rank (glede na codeforces rating)
+* rang (glede na codeforces rangiranje)
 * državo iz katere je
 
 Za vsako **nalogo** imamo shranjeno tekmovanje, na katerem se je pojavila, in zaporedno številko naloge na tem tekmovanju.
 
-**Submissions**  
 Za vsako uspešno **oddajo** imamo podane naslednje podatke:
 * tekmovalec, ki je naredil oddajo
 * naloga h kateri spada ta oddaja
 * programski jezik
 * čas od začetka tekmovanja
 
-Poleg tega je za vsakega uporabnika in vsako tekmovanje, ki se ga je udeležil, zajeta še njegova uvrstitev.
+Poleg tega je za vsakega uporabnika in vsako tekmovanje, ki se ga je udeležil, zajeta še njegova uvrstitev na tem tekmovanju.
 
 ## Hipoteze
 
