@@ -30,7 +30,7 @@ Cilj naloge je ovreči ali potrditi naslednje **hipoteze**:
 * Več kot 80 % od vseh oddaj je v jeziku c++, manj kot 5 % pa v pythonu
 * Tekmovalci, ki so bili na več tekmovanjih, so bolši kot tisti, ki so bili na manj tekmovanjih
 
-Poleg tega so nekoliko bolj podrobno obravnavans tudi naslednja vprašanja:
+Poleg tega so nekoliko bolj podrobno obravnavana tudi naslednja vprašanja:
 * Iz katerih držav so najboljši programerji?
 * Ali obstaja povezava med tem, kako hitro nek tekmovalec rešuje lahke naloge in tem, kako težke naloge je sposoben rešiti?
 * Kako udeležba na tekmovanjih vpliva na uspeh na tekmovanjih?
